@@ -4,6 +4,11 @@
 #include <string.h>
 #include <stdlib.h>
 
+static inline _Bool is_aligned(const void *restrict pointer, size_t byte_count)
+{ return (uintptr_t)pointer % byte_count == 0; }
+
+
+
 extern void _swtch(void* from, void* to);
 extern void _thrstart(void);
 void cleanup_threads();
@@ -11,7 +16,9 @@ extern void _ENDMONITOR(void);
 
 static void* current_thread = NULL; //keeps current running thread
 static int nthreads = -1; //number of running threads
-static thread_t thread_pool[MAX_N_THREADS]; //keeps addresses of thread_t objects, index in this array is thread ID
+
+// static thread_t thread_pool[MAX_N_THREADS]; //keeps addresses of thread_t objects, index in this array is thread ID
+
 Queue ready_queue;
 Queue free_queue;
 thread_t main_thread;
@@ -34,7 +41,6 @@ void Thread_init(void){
     //init ready queue
     initializeQueue(&ready_queue);
     initializeQueue(&free_queue);
-    //main thread will always be at index 0 of global thread pool
     main_thread.id = (int)&main_thread;
     current_thread = &main_thread;
     nthreads = 1;
@@ -58,7 +64,7 @@ int Thread_new(int func(void *), void *args, size_t nbytes, ...){
         assert(nbytes>0);
     }
     thread_t* new_thread;
-
+    cleanup_threads();
     new_thread = malloc(1024*16 + nbytes + sizeof(thread_t) + 15); //allocate bytes for stack + thread_t type -> +15 to be able to round up to already allocated memory
     assert(new_thread!=NULL);
 
@@ -75,25 +81,24 @@ int Thread_new(int func(void *), void *args, size_t nbytes, ...){
         memcpy(new_thread->sp, args , nbytes); //copy args buffer into top of the stack
         args_copy = new_thread->sp;
     }
+
     //init stack frame:
-    
-    // args pointer for thread start func
-    new_thread->sp = ((char*)new_thread->sp - 4); //decrement by 4 bytes
-    *(unsigned long*)(new_thread->sp) =(unsigned long) args_copy;   //write args pointer
 
-    //func addr to call
-    new_thread->sp = ((char*)new_thread->sp - 4);
-    *(unsigned long*)(new_thread->sp) = (unsigned long) func;   //write 4 bytes
+    //ret address to _thrstart
+    new_thread->sp =(char*)new_thread->sp - 16; //-> set to new 16 alligned mem address	
+   *(unsigned long*)new_thread->sp = (unsigned long)_thrstart;
+    //write old_ebp
+    new_thread->sp =(char*)new_thread->sp - 4;	
+   *(unsigned long*)new_thread->sp = (unsigned long)(((char*)new_thread->sp)-3); 
+    //arguement 2
+    new_thread->sp =(char*)new_thread->sp - 4;	
+   *(unsigned long*)new_thread->sp = (unsigned long)args;
+   //arguement 1
+   new_thread->sp =(char*)new_thread->sp - 4;	
+   *(unsigned long*)new_thread->sp = (unsigned long)func;
+   //null
+   new_thread->sp =(char*)new_thread->sp - 4;	
 
-    //place addr of _threstart in return address of current stack frame
-    new_thread->sp = ((char*)new_thread->sp - 4); //decrement by 4 bytes
-    *(unsigned long*)(new_thread->sp) = (unsigned long) _thrstart;   
-
-
-    for(int i=0;i<3;i++){
-        new_thread->sp = ((char*)new_thread->sp - 4); //decrement by 4 bytes
-        *(unsigned long*)(new_thread->sp) = (unsigned long) 0;   
-    }
 
     nthreads++;
     enqueue(&ready_queue,(void*)new_thread);
