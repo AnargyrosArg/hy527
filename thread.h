@@ -10,6 +10,8 @@
 typedef struct {
     void* sp; //stack pointer for thread's stack
     int id;
+    Queue join_queue;
+    int joined_code;
 } thread_t;
 
 
