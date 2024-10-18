@@ -2,7 +2,7 @@ all: a.out
 
 
 a.out: main.o thread.o thread.h queue.h switch.o 
-	gcc -m32 main.o thread.o switch.o -o a.out -I.
+	gcc -m32 main.o  thread.o switch.o  -o a.out -I.
 
 
 main.o: main.c 
