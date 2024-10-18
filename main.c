@@ -7,12 +7,13 @@ extern void _thrstart(void);
 
 int thread_func1(void* args){
     printf("Hello from thread 1, waiting for thread 2!\n");
-    Thread_join(*(int*)args);
-    printf("joined!\n");
+    int code = Thread_join(*(int*)args);
+    printf("joined with code %d!\n",code);
 }
 
 int thread_func2(void* args){
     printf("Hello from thread 2, returning!\n");
+    Thread_exit(32);
 }
 
 

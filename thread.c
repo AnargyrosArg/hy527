@@ -146,6 +146,7 @@ void Thread_init(void)
     // init ready queue
     initializeQueue(&ready_queue);
     initializeQueue(&free_queue);
+    initializeQueue(&(main_thread.join_queue));
     main_thread.id = (int)&main_thread;
     current_thread = &main_thread;
     nthreads = 1;
@@ -244,27 +245,30 @@ void Thread_exit(int code)
 {
     assert(current_thread);
     cleanup_threads();
-    if (nthreads == 1)
-    {
-        nthreads--;
-        cleanup_threads();
-        exit(code);
-    }else if (join_all != NULL && nthreads == 2){
-        enqueue(&ready_queue,join_all);
-        switch_thread();
-    }
+    
 
     thread_t *current = current_thread;
     while (!isEmpty(&(current->join_queue)))
     {
+        printQueue(&(current->join_queue));
         void *continue_thread = peek(&(current->join_queue));
         dequeue(&(current->join_queue));
         enqueue(&ready_queue, continue_thread);
         ((thread_t *)continue_thread)->joined_code = code;
     }
     enqueue(&free_queue, current_thread);
-    nthreads--;
 
+    if (join_all != NULL && nthreads == 2){
+        enqueue(&ready_queue,join_all);
+    }
+      if (nthreads == 1)
+    {
+        nthreads--;
+        cleanup_threads();
+        exit(code);
+    }
+
+    nthreads--;
     switch_thread();
 }
 
@@ -290,12 +294,14 @@ int Thread_join(int tid)
         thread_t *awaited_thread = (void *)tid;
         enqueue(&(awaited_thread->join_queue), current_thread);
         switch_thread();
+        return ((thread_t *)current_thread)->joined_code;
     }
     else if (tid == 0)
     {
         assert(join_all == NULL);//make sure no other thread is waiting all
         join_all = current_thread;
         switch_thread();
+        return 0;
+
     }
-    return ((thread_t *)current_thread)->joined_code;
 }
