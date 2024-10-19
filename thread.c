@@ -6,9 +6,10 @@
 #include <signal.h>
 #include <sys/time.h>
 #include </usr/include/signal.h>
+#include <sem.h>
 
-// 1 million max active threads -> size of free and ready queue
-#define MAX_ACTIVE_THREADS 1000000
+// 100k max active threads -> size of free and ready queue
+#define MAX_ACTIVE_THREADS 100000
 
 // limit size of join queue to save memory
 #define MAX_JOIN_THREADS 1000
@@ -23,8 +24,7 @@
 
 void _STARTMONITOR(void) {};
 
-
-void check_duplicates(void **array,int count);
+void check_duplicates(void **array, int count);
 
 static int CRITICAL_SECTION_FLAG = 0;
 
@@ -37,7 +37,8 @@ void initializeQueue(Queue *q, int size)
     q->rear = 0;
     q->size = size + 1;
     CRITICAL_SECTION(q->items = malloc((size + 1) * sizeof(queue_item_t)));
-    CRITICAL_SECTION(memset(q->items,0,(size + 1) * sizeof(queue_item_t)));
+    assert(q->items);
+    CRITICAL_SECTION(memset(q->items, 0, (size + 1) * sizeof(queue_item_t)));
 }
 
 void destroyQueue(Queue *q)
@@ -88,7 +89,6 @@ queue_item_t peek(Queue *q)
     return q->items[q->front];
 }
 
-
 /* Thread implementation */
 
 extern void _swtch(void *from, void *to);
@@ -115,9 +115,8 @@ void preemptive_context_switch(int sig, struct sigcontext context)
         return;
     }
 
-    enqueue(&ready_queue, current_thread);
     CRITICAL_SECTION(sigsetmask(context.oldmask));
-    switch_thread();
+    Thread_pause();
     return;
 }
 
@@ -301,5 +300,48 @@ int Thread_join(int tid)
             switch_thread();
         }
         return 0;
+    }
+}
+
+void Sem_init(Sem_T *sem, int count)
+{
+    assert(sem != NULL);
+
+    CRITICAL_SECTION(Queue *q = malloc(sizeof(Queue));
+    initializeQueue(q, MAX_JOIN_THREADS);
+    sem->count = count;
+    sem->queue = q);
+    
+}
+
+void Sem_wait(Sem_T *sem)
+{
+    assert(sem);
+    assert(current_thread);
+    if (sem->count <= 0)
+    {
+        enqueue(sem->queue, current_thread);
+        switch_thread();
+    }
+    else
+    {
+        sem->count--;
+    }
+}
+
+void Sem_signal(Sem_T *sem)
+{
+    assert(sem);
+    assert(current_thread);
+
+    if (sem->count == 0 && !isEmpty(sem->queue))
+    {
+        void *thread = peek(sem->queue);
+        dequeue(sem->queue);
+        enqueue(&ready_queue, thread);
+    }
+    else
+    {
+        sem->count++;
     }
 }
