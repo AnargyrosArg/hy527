@@ -252,6 +252,7 @@ void Thread_exit(int code)
     if (join_all != NULL && nthreads == 2)
     {
         enqueue(&ready_queue, join_all);
+        join_all = NULL;
     }
     if (nthreads == 1)
     {
