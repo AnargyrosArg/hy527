@@ -8,12 +8,6 @@
 #include </usr/include/signal.h>
 #include <sem.h>
 
-// 100k max active threads -> size of free and ready queue
-#define MAX_ACTIVE_THREADS 100000
-
-// limit size of join queue to save memory
-#define MAX_JOIN_THREADS 1000
-
 #define CRITICAL_SECTION(code)   \
     do                           \
     {                            \
@@ -173,9 +167,9 @@ void Thread_init(void)
 
     // set timer interval
     timer.it_value.tv_sec = 0;
-    timer.it_value.tv_usec = 1; // highest possible frequency to test for concurrency errors
+    timer.it_value.tv_usec = 30;
     timer.it_interval.tv_sec = 0;
-    timer.it_interval.tv_usec = 1;
+    timer.it_interval.tv_usec = 30;
 
     setitimer(ITIMER_VIRTUAL, &timer, NULL);
 

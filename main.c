@@ -31,12 +31,12 @@ int main(void){
     printf("hello from main thread!\n");
     int thread2;
     int thread1 = Thread_new(thread_func1,&thread2,sizeof(int));
-    thread2 = Thread_new(thread_func2,"hallo00000000000000000000!",sizeof("hallo00000000000000000000!"));
+    thread2 = Thread_new(thread_func2,"hello!!!!!",sizeof("hello!!!!!"));
     Thread_join(thread1);
-    thread2 = Thread_new(thread_func2,"hallo00000000000000000000!",sizeof("hallo00000000000000000000!"));
-    thread2 = Thread_new(thread_func2,"hallo00000000000000000000!",sizeof("hallo00000000000000000000!"));
-    thread2 = Thread_new(thread_func2,"hallo00000000000000000000!",sizeof("hallo00000000000000000000!"));
-    thread2 = Thread_new(thread_func2,"hallo00000000000000000000!",sizeof("hallo00000000000000000000!"));
+    thread2 = Thread_new(thread_func2,"hello!!!!!",sizeof("hello!!!!!"));
+    thread2 = Thread_new(thread_func2,"hello!!!!!",sizeof("hello!!!!!"));
+    thread2 = Thread_new(thread_func2,"hello!!!!!",sizeof("hello!!!!!"));
+    thread2 = Thread_new(thread_func2,"hello!!!!!",sizeof("hello!!!!!"));
 
     Thread_join(0);
     printf("hello again from main thread!\n");
