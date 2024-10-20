@@ -30,64 +30,81 @@ static int CRITICAL_SECTION_FLAG = 0;
 
 /* Queue implementation inside thread.c in order to guard it inside _STARTMONITOR/_ENDMONITOR */
 
+Node* createNode(queue_item_t item)
+{
+    Node* new_node;
+    CRITICAL_SECTION(    new_node = (Node*)malloc(sizeof(Node)));
+    new_node->item = item;
+    new_node->next = NULL;
+    return new_node;
+}
+
 // Function to initialize the queue
-void initializeQueue(Queue *q, int size)
+void initializeQueue(Queue *q)
 {
-    q->front = 0;
-    q->rear = 0;
-    q->size = size + 1;
-    CRITICAL_SECTION(q->items = malloc((size + 1) * sizeof(queue_item_t)));
-    assert(q->items);
-    CRITICAL_SECTION(memset(q->items, 0, (size + 1) * sizeof(queue_item_t)));
+    q->front = NULL;
+    q->rear = NULL;
 }
-
-void destroyQueue(Queue *q)
-{
-    CRITICAL_SECTION(free(q->items));
-}
-
 // Function to check if the queue is empty
-bool isEmpty(Queue *q) { return (q->front == q->rear); }
-
-// Function to check if the queue is full
-bool isFull(Queue *q) { return (((q->rear + 1) % q->size) == q->front); }
-
-// Function to add an element to the queue (Enqueue
-// operation)
-void enqueue(Queue *q, queue_item_t value)
+bool isEmpty(Queue* q)
 {
-    if (isFull(q))
-    {
-        CRITICAL_SECTION(printf("full!\n"));
-        exit(-1);
-    }
-    q->items[q->rear] = value;
-    q->rear = (q->rear + 1) % q->size;
+    return q->front == NULL && q->rear == NULL;
 }
 
-// Function to remove an element from the queue (Dequeue
-// operation)
-void dequeue(Queue *q)
+// Function to add an element to the queue
+void enqueue(Queue* q, queue_item_t new_data)
 {
-    if (isEmpty(q))
-    {
-        CRITICAL_SECTION(printf("empty!\n"));
-        exit(-1);
+    // Create a new linked list node
+    Node* new_node = createNode(new_data);
+
+    // If queue is empty, the new node is both the front
+    // and rear
+    if (q->rear == NULL) {
+        q->front = q->rear = new_node;
+        return;
     }
-    q->front = (q->front + 1) % q->size;
+
+    // Add the new node at the end of the queue and
+    // change rear
+    q->rear->next = new_node;
+    q->rear = new_node;
 }
 
-// Function to get the element at the front of the queue
-// (Peek operation)
-queue_item_t peek(Queue *q)
+// Function to remove an element from the queue
+void dequeue(Queue* q)
 {
-    if (isEmpty(q))
-    {
-        CRITICAL_SECTION(printf("Queue is empty\n"));
-        return (void *)-1;
+    // If queue is empty, return
+    if (isEmpty(q)) {
+        printf("Queue Underflow\n");
+        return;
     }
-    return q->items[q->front];
+
+    // Store previous front and move front one node
+    // ahead
+    Node* temp = q->front;
+    q->front = q->front->next;
+
+    // If front becomes null, then change rear also
+    // to null
+    if (q->front == NULL)
+        q->rear = NULL;
+
+    // Deallocate memory of the old front node
+    CRITICAL_SECTION(free(temp));
 }
+
+
+queue_item_t peek(Queue* q)
+{
+
+    // Checking if the queue is empty
+    if (isEmpty(q)) {
+        printf("Queue is empty\n");
+        return NULL;
+    }
+    return q->front->item;
+}
+
 
 /* Thread implementation */
 
@@ -138,9 +155,9 @@ void Thread_init(void)
     }
 
     // init ready queue
-    initializeQueue(&ready_queue, MAX_ACTIVE_THREADS);
-    initializeQueue(&free_queue, MAX_ACTIVE_THREADS);
-    initializeQueue(&(main_thread.join_queue), MAX_JOIN_THREADS);
+    initializeQueue(&ready_queue);
+    initializeQueue(&free_queue);
+    initializeQueue(&(main_thread.join_queue));
     main_thread.id = (int)&main_thread;
     current_thread = &main_thread;
     nthreads = 1;
@@ -191,7 +208,7 @@ int Thread_new(int func(void *), void *args, size_t nbytes, ...)
     assert(new_thread != NULL);
 
     // initialize join queue for thread
-    initializeQueue(&(new_thread->join_queue), MAX_JOIN_THREADS);
+    initializeQueue(&(new_thread->join_queue));
 
     void *alligned_addr = (void *)(((uintptr_t)new_thread + 15) & ~(uintptr_t)0x0F); // fixes ptr to be 16 alligned
     void *thread_stack = ((char *)alligned_addr) + 1024 * 16 + nbytes;               // get alligned pointer to end of allocation block -> this will be the thread's stack pointer
@@ -258,9 +275,9 @@ void Thread_exit(int code)
     {
         nthreads--;
         cleanup_threads();
-        destroyQueue(&(main_thread.join_queue));
-        destroyQueue(&free_queue);
-        destroyQueue(&ready_queue);
+        // destroyQueue(&(main_thread.join_queue));
+        // destroyQueue(&free_queue);
+        // destroyQueue(&ready_queue);
         exit(code);
     }
     nthreads--;
@@ -275,7 +292,7 @@ void cleanup_threads()
             dequeue(&free_queue);
             if (finished_thread != &main_thread)
             {
-                destroyQueue(&(((thread_t *)finished_thread)->join_queue));
+                // destroyQueue(&(((thread_t *)finished_thread)->join_queue));
                 CRITICAL_SECTION(free(finished_thread));
             }
         });
@@ -309,10 +326,9 @@ void Sem_init(Sem_T *sem, int count)
     assert(sem != NULL);
 
     CRITICAL_SECTION(Queue *q = malloc(sizeof(Queue));
-    initializeQueue(q, MAX_JOIN_THREADS);
-    sem->count = count;
-    sem->queue = q);
-    
+                     initializeQueue(q);
+                     sem->count = count;
+                     sem->queue = q);
 }
 
 void Sem_wait(Sem_T *sem)

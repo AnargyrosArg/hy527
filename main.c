@@ -4,7 +4,6 @@
 #include <sem.h>
 Sem_T mutex;
 
-
 int thread_func1(void* args){
     printf("Hello from thread 1, waiting for thread 2!\n");
     int code = Thread_join(*(int*)args);
@@ -12,13 +11,13 @@ int thread_func1(void* args){
 }
 
 int thread_func2(void* args){
-    printf("%s from thread 2, returning!\n",args);    
+    printf("%s from thread 2, returning!\n",args);
 
     //critical section
     Sem_wait(&mutex);
 
     for(int i=0;i<1000;i++){
-        printf("%d\n",i);
+        // printf("%d\n",i);
     }
 
     Sem_signal(&mutex);
@@ -44,3 +43,16 @@ int main(void){
     Thread_exit(0);
 }
 
+
+// int thread_func(void* args){
+//     printf("A\n");
+// }
+
+// int main(void)
+// {
+//     Thread_init();
+//     for(int i=0;i<1000000;i++){
+//         Thread_new(thread_func,NULL,0);
+//     }
+//     Thread_join(0);
+// }
