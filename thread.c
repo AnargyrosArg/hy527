@@ -229,7 +229,7 @@ int Thread_new(int func(void *), void *args, size_t nbytes, ...)
     *(unsigned long *)new_thread->sp = (unsigned long)(((char *)new_thread->sp) - 3);
     // arguement 2
     new_thread->sp = (char *)new_thread->sp - 4;
-    *(unsigned long *)new_thread->sp = (unsigned long)args;
+    *(unsigned long *)new_thread->sp = (unsigned long)args_copy;
     // arguement 1
     new_thread->sp = (char *)new_thread->sp - 4;
     *(unsigned long *)new_thread->sp = (unsigned long)func;
