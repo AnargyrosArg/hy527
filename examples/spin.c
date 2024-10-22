@@ -19,7 +19,7 @@ main(int argc, char *argv[]) {
         if (argc >= 2)
                 m = atoi(argv[1]);
         for (i = 0; i < m; i++)
-                Thread_new(f, &count, sizeof count, NULL);
+                Thread_new(f, &count, sizeof count);
         Thread_join(0);
         printf("%d == %d\n", n, m*count);
         Thread_exit(0);

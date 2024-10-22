@@ -28,6 +28,7 @@ Node* createNode(queue_item_t item)
 {
     Node* new_node;
     CRITICAL_SECTION(    new_node = (Node*)malloc(sizeof(Node)));
+    assert(new_node);
     new_node->item = item;
     new_node->next = NULL;
     return new_node;
@@ -198,14 +199,14 @@ int Thread_new(int func(void *), void *args, size_t nbytes, ...)
     thread_t *new_thread;
     cleanup_threads();
 
-    CRITICAL_SECTION(new_thread = malloc(1024 * 16 + nbytes + sizeof(thread_t) + 15)); // allocate bytes for stack + thread_t type -> +15 to be able to round up to already allocated memory
+    CRITICAL_SECTION(new_thread = malloc(1024 * 8 + nbytes + sizeof(thread_t) + 15)); // allocate bytes for stack + thread_t type -> +15 to be able to round up to already allocated memory
     assert(new_thread != NULL);
 
     // initialize join queue for thread
     initializeQueue(&(new_thread->join_queue));
 
     void *alligned_addr = (void *)(((uintptr_t)new_thread + 15) & ~(uintptr_t)0x0F); // fixes ptr to be 16 alligned
-    void *thread_stack = ((char *)alligned_addr) + 1024 * 16 + nbytes;               // get alligned pointer to end of allocation block -> this will be the thread's stack pointer
+    void *thread_stack = ((char *)alligned_addr) + 1024 * 8 + nbytes;               // get alligned pointer to end of allocation block -> this will be the thread's stack pointer
     new_thread->sp = thread_stack;
 
     void *args_copy;
@@ -320,6 +321,7 @@ void Sem_init(Sem_T *sem, int count)
     assert(sem != NULL);
 
     CRITICAL_SECTION(Queue *q = malloc(sizeof(Queue));
+                    assert(q);
                      initializeQueue(q);
                      sem->count = count;
                      sem->queue = q);
