@@ -1,3 +1,11 @@
 *.o
 *.out
 .vscode
+sieve
+sieve2
+sieve4
+sink
+sort
+spin
+spin2
+spin3
