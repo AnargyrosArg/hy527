@@ -4,9 +4,10 @@ Most relevant code is in thread.c
 
 Compilation with: make
 
-It will compile all source files and produce object files. 
-Also it will compile main.c and produce an executable ./a.out
-main.c can be replaced with any example you would like to run.
+It will compile all examples and thread "library" files into object and executable files.
+The executable for each example has the same name as the example:
+e.g
+    ./sort
 
 Some implementation details:
 - Each thread is given an 8KB stack
